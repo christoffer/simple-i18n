@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 
 	"github.com/christoffer/simple-i18n/internal"
@@ -21,7 +22,7 @@ func main() {
 	flag.BoolVar(&verbose, "v", false, "Enable verbose output")
 
 	var packageName string
-	flag.StringVar(&packageName, "p", "i18n", "Package name for generated files")
+	flag.StringVar(&packageName, "p", "", "Package name for generated files (defaults to output directory name)")
 
 	flag.Parse()
 
@@ -30,6 +31,12 @@ func main() {
 		flag.PrintDefaults()
 		os.Exit(1)
 	}
+
+	if packageName == "" {
+		packageName = filepath.Base(outputDir)
+	}
+
+	validatePackageName(packageName)
 
 	if err := os.MkdirAll(outputDir, 0755); err != nil {
 		bail("Error creating output directory: %v", err)
@@ -47,7 +54,7 @@ func main() {
 	var baseData *internal.TomlData
 	allLocales := make([]string, 0)
 	for locale, tomlData := range tomlDataByLocale {
-		content, err := internal.GetTranslationImpl(tomlData)
+		content, err := internal.GetTranslationImpl(tomlData, packageName)
 		if err != nil {
 			bail("Error generating translation implementation for %s: %v", locale, err)
 		}
@@ -58,14 +65,18 @@ func main() {
 		}
 	}
 
-	if content, err := internal.WriteBaseTranslation(*baseData, outputDir); err != nil {
+	//goland:noinspection ALL Can't be nil: We check that allLocales is non-empty, and we pick the first one
+	baseLocaleData := *baseData
+	if content, err := internal.GetBaseTranslation(baseLocaleData, packageName); err != nil {
 		bail("Error generating base translation interface: %v", err)
 	} else {
 		writeFile("base.go", outputDir, content, verbose)
 	}
 
-	if err := internal.WriteTranslator(allLocales, outputDir, *baseData); err != nil {
-		bail("Error generating manager: %v", err)
+	if content, err := internal.GetTranslator(allLocales, packageName, baseLocaleData); err != nil {
+		bail("Error generating translator: %v", err)
+	} else {
+		writeFile("translator.go", outputDir, content, verbose)
 	}
 
 	fmt.Printf("Generated translation files for locales: %s\n", strings.Join(allLocales, ", "))
@@ -84,4 +95,15 @@ func writeFile(filename string, outputDir string, content []byte, verbose bool) 
 func bail(msg string, args ...interface{}) {
 	_, _ = fmt.Fprintf(os.Stderr, msg+"\n", args...)
 	os.Exit(1)
+}
+
+func validatePackageName(packageName string) {
+	if packageName == "" {
+		bail("Package name cannot be empty")
+	}
+	// Regular expression to validate package names
+	var validPackageNameRegex = regexp.MustCompile(`^[a-zA-Z_][a-zA-Z0-9_]*$`)
+	if !validPackageNameRegex.MatchString(packageName) {
+		bail("Invalid package name: %s", packageName)
+	}
 }

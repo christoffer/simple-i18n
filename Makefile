@@ -4,6 +4,6 @@ build:
 
 # Test integration
 test: build
-	@./bin/simple-i18n -i ./cmd/test/toml -o ./cmd/test/i18n
+	@./bin/simple-i18n -i ./cmd/test/toml -o ./cmd/test/generated -p i18n
 	@go build -o bin/test  ./cmd/test/main.go
 	@./bin/test

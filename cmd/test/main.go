@@ -2,10 +2,10 @@ package main
 
 import (
 	"fmt"
-	"github.com/christoffer/simple-i18n/cmd/test/i18n"
+	"github.com/christoffer/simple-i18n/cmd/test/generated"
 )
 
-func printAllTranslations(t *translations.Translator, language string) {
+func printAllTranslations(t *i18n.Translator, language string) {
 	fmt.Printf("=== %s ===\n", language)
 	fmt.Printf("Root message: %s\n", t.RootMessage())
 	fmt.Printf("flavorPhrase: %s\n", t.FlavorPhrase())
@@ -31,7 +31,7 @@ func printAllTranslations(t *translations.Translator, language string) {
 
 func main() {
 	// Create translator instance
-	t := translations.New()
+	t := i18n.New()
 
 	// Test all supported languages
 	languages := []string{"en", "en_uk", "sv"}
@@ -46,7 +46,7 @@ func main() {
 
 	// Demonstrate seamless switching in a function (new direct API)
 	fmt.Println("=== Seamless Function Usage ===")
-	getUserMessage := func(translator *translations.Translator, username string, count int) string {
+	getUserMessage := func(translator *i18n.Translator, username string, count int) string {
 		return translator.Menu().Message(count, username)
 	}
 

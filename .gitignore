@@ -6,4 +6,4 @@
 .DS_Store?
 
 bin/
-cmd/test/i18n/
+cmd/test/generated/
