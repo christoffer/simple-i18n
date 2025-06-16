@@ -1,0 +1,13 @@
+# English
+root_message = "Welcome"
+flavorPhrase = "Organise Colours of Cancelled Biscuits"
+
+[menu]
+message = "The {name} has {count} notification{{s}}"
+family = "The {thing} was happy with a family of {thing}{{s}}"
+
+[specials]
+count = "Count: {count}"
+score = "Score: {score}"
+point = "Point{{s}}"
+

@@ -1,0 +1,12 @@
+# Swedish
+root_message = "Välkommen"
+flavorPhrase = "Organisera färger av avbrutna kakor"
+
+[menu]
+message = "{name} har {count} notis{{er}}"
+family = "{thing} var glad med en familj av {thing}{{ar}}"
+
+[specials]
+count = "Antal: {count}"
+score = "Poäng: {score}"
+point = "Poäng{{}}" # Plurals still needs to be denoted, even if they're the same
