@@ -2,4 +2,3 @@
 - [ ] Support for specifying base language
 - [ ] Comment over generated functions with the translation string
 - [ ] Validation for non-base languages so that they conform
-- [ ] Tests for generator
