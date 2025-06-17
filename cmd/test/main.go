@@ -30,12 +30,8 @@ func printAllTranslations(t *i18n.Translator, language string) {
 }
 
 func main() {
-	// Create translator instance
 	t := i18n.New()
-
-	// Test all supported languages
 	languages := []string{"en", "en_uk", "sv"}
-
 	for _, lang := range languages {
 		if err := t.SetLanguage(lang); err != nil {
 			fmt.Printf("Error setting language %s: %v\n", lang, err)
@@ -43,22 +39,4 @@ func main() {
 		}
 		printAllTranslations(t, lang)
 	}
-
-	// Demonstrate seamless switching in a function (new direct API)
-	fmt.Println("=== Seamless Function Usage ===")
-	getUserMessage := func(translator *i18n.Translator, username string, count int) string {
-		return translator.Menu().Message(count, username)
-	}
-
-	if err := t.SetLanguage("en"); err != nil {
-		fmt.Printf("Error setting language to English: %v\n", err)
-		return
-	}
-	fmt.Printf("English function: %s\n", getUserMessage(t, "Alice", 5))
-
-	if err := t.SetLanguage("sv"); err != nil {
-		fmt.Printf("Error setting language to Swedish: %v\n", err)
-		return
-	}
-	fmt.Printf("Swedish function: %s\n", getUserMessage(t, "Alice", 5))
 }
