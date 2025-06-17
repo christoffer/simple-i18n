@@ -8,7 +8,6 @@ import (
 func printAllTranslations(t *i18n.Translator, language string) {
 	fmt.Printf("=== %s ===\n", language)
 	fmt.Printf("Root message: %s\n", t.RootMessage())
-	fmt.Printf("flavorPhrase: %s\n", t.FlavorPhrase())
 
 	menu := t.Menu()
 
@@ -21,7 +20,8 @@ func printAllTranslations(t *i18n.Translator, language string) {
 	specials := t.Specials()
 
 	fmt.Printf("Count (42): %s\n", specials.Count(42))
-	fmt.Printf("Score (33): %s\n", specials.Score("33"))
+	fmt.Printf("Criteria (1): %s\n", specials.Criteria(1))
+	fmt.Printf("Criteria (0): %s\n", specials.Criteria(0))
 
 	fmt.Printf("Point (1): %s\n", specials.Point(1))
 	fmt.Printf("Point (5): %s\n", specials.Point(5))
