@@ -174,8 +174,8 @@ func validateSections(base, other map[string]map[string]string, otherLocale stri
 
 		if sectionErrors := validateSection(baseSection, otherSection, sectionName, otherLocale); len(sectionErrors) != 0 {
 			for _, err := range sectionErrors {
-				errMsg := fmt.Sprintf("%s > %s", otherLocale, err.Error())
-				errors = append(errors, fmt.Errorf(errMsg))
+				errMsg := fmt.Errorf("%s: %s", otherLocale, err.Error())
+				errors = append(errors, errMsg)
 			}
 		}
 	}
