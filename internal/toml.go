@@ -34,12 +34,18 @@ func ProcessTomlDir(tomlDir string) (map[string]TomlData, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to compile locale regex: %w", err)
 	}
+	seenLocales := make(map[string]bool)
 	for _, file := range files {
 		locale := strings.ToLower(strings.TrimSuffix(filepath.Base(file), ".toml"))
 		if !localeRegexp.MatchString(locale) {
 			fmt.Fprintf(os.Stderr, "ignoring non-locale named file %s (got locale '%s', only accepting 'xx' or 'xx_xx')\n", file, locale)
 			continue
 		}
+		if seenLocales[locale] {
+			fmt.Fprintf(os.Stderr, "ignoring duplicate locale %s in file %s\n", locale, file)
+			continue
+		}
+		seenLocales[locale] = true
 		fileData, err := os.ReadFile(file)
 		if err != nil {
 			return nil, err
