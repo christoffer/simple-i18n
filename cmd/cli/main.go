@@ -13,7 +13,7 @@ import (
 
 func main() {
 	var tomlDir string
-	flag.StringVar(&tomlDir, "i", "translations", "Directory containing TOML files")
+	flag.StringVar(&tomlDir, "i", "translations", "Input dir containing TOML files")
 
 	var outputDir string
 	flag.StringVar(&outputDir, "o", "i18n", "Output directory for generated files")
@@ -23,6 +23,9 @@ func main() {
 
 	var packageName string
 	flag.StringVar(&packageName, "p", "", "Package name for generated files (defaults to output directory name)")
+
+	var baseLocale string
+	flag.StringVar(&baseLocale, "b", "", "Base locale for translations (defaults to the first locale found in input dir)")
 
 	flag.Parse()
 
@@ -42,31 +45,26 @@ func main() {
 		bail("Error creating output directory: %v", err)
 	}
 
-	tomlDataByLocale, err := internal.ProcessTomlDir(tomlDir)
+	processResult, err := internal.ProcessTomlDir(tomlDir, baseLocale)
 	if err != nil {
 		bail("Error parsing TOML files: %v", err)
 	}
 
-	if len(tomlDataByLocale) == 0 {
+	if len(processResult.TomlDataByLocale) == 0 {
 		bail("No TOML files found in %s", tomlDir)
 	}
 
-	var baseData *internal.TomlData
 	allLocales := make([]string, 0)
-	for locale, tomlData := range tomlDataByLocale {
+	for locale, tomlData := range processResult.TomlDataByLocale {
 		content, err := internal.GetTranslationImpl(tomlData, packageName)
 		if err != nil {
 			bail("Error generating translation implementation for %s: %v", locale, err)
 		}
 		writeFile(tomlData.Locale+".go", outputDir, content, verbose)
 		allLocales = append(allLocales, locale)
-		if baseData == nil {
-			baseData = &tomlData
-		}
 	}
 
-	//goland:noinspection ALL Can't be nil: We check that allLocales is non-empty, and we pick the first one
-	baseLocaleData := *baseData
+	baseLocaleData := processResult.TomlDataByLocale[processResult.BaseLocale]
 	if content, err := internal.GetBaseTranslation(baseLocaleData, packageName); err != nil {
 		bail("Error generating base translation interface: %v", err)
 	} else {

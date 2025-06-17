@@ -40,18 +40,18 @@ func genFuncImpl(sb *strings.Builder, name string, data map[string]string) bool 
 	return hasParams
 }
 
-func genFuncSignature(sb *strings.Builder, structName string, data map[string]string) {
-	keys := getKeysSorted(data)
-	for _, key := range keys {
-		strValue := data[key]
-		funcName := toPublicName(key)
-		params, _ := getMethodDef(strValue)
-		if structName == "" {
-			sb.WriteString(fmt.Sprintf("%s(%s) string\n", funcName, strings.Join(params, ", ")))
-		} else {
-			sb.WriteString(fmt.Sprintf("func (_ *%s) %s(%s) string\n", structName, funcName, strings.Join(params, ", ")))
-		}
-	}
+func genFuncSignature(sb *strings.Builder, key string, value string) {
+	funcName := toPublicName(key)
+	params, _ := getMethodDef(value)
+	sb.WriteString(fmt.Sprintf("%s(%s) string\n", funcName, strings.Join(params, ", ")))
+}
+
+// GetFuncSignatureId generates a unique identifier for a function signature based on its parameters.
+// This is useful to compare generated functions for different locales.
+func GetFuncSignatureId(key string, value string) string {
+	var sb strings.Builder
+	genFuncSignature(&sb, key, value)
+	return strings.TrimSpace(sb.String())
 }
 
 func GetTranslationImpl(data TomlData, packageName string) ([]byte, error) {
@@ -134,7 +134,10 @@ func GetBaseTranslation(baseTranslation TomlData, packageName string) ([]byte, e
 		sectionNameToType[sectionName] = sectionTypeName
 
 		sb.WriteString(fmt.Sprintf("type %s interface{\n\n", sectionTypeName))
-		genFuncSignature(&sb, "", sectionData)
+		sortedKeys := getKeysSorted(sectionData)
+		for _, key := range sortedKeys {
+			genFuncSignature(&sb, key, sectionData[key])
+		}
 		sb.WriteString("}\n\n")
 	}
 
@@ -144,7 +147,10 @@ func GetBaseTranslation(baseTranslation TomlData, packageName string) ([]byte, e
 		sb.WriteString(fmt.Sprintf("\t%s() %s\n", sectionName, sectionType))
 	}
 	sb.WriteString("\n")
-	genFuncSignature(&sb, "", baseTranslation.root)
+	sortedKeys := getKeysSorted(baseTranslation.root)
+	for _, key := range sortedKeys {
+		genFuncSignature(&sb, key, baseTranslation.root[key])
+	}
 	sb.WriteString("}\n\n")
 
 	formatted, err := formatCode(sb.String())

@@ -17,28 +17,38 @@ type TomlData struct {
 	sections map[string]map[string]string
 }
 
-func ProcessTomlDir(tomlDir string) (map[string]TomlData, error) {
+type ProcessResult struct {
+	BaseLocale       string
+	TomlDataByLocale map[string]TomlData
+}
+
+func ProcessTomlDir(tomlDir string, baseLocale string) (ProcessResult, error) {
+	// Be case-insensitive since we're dealing with locales based on filenames
+	localeRegexp, err := regexp.Compile(`^[a-z]{2}(_[a-z]{2})?$`)
+	if err != nil {
+		return ProcessResult{}, fmt.Errorf("failed to compile locale regex: %w", err)
+	}
+
+	if !localeRegexp.MatchString(baseLocale) {
+		return ProcessResult{}, fmt.Errorf("invalid base locale: %s (expected format 'xx' or 'xx_xx')", baseLocale)
+	}
+
 	files, err := filepath.Glob(filepath.Join(tomlDir, "*.toml"))
 	if err != nil {
-		return nil, err
+		return ProcessResult{}, err
 	}
 
 	if len(files) == 0 {
-		return nil, err
+		return ProcessResult{}, err
 	}
 
-	langToTranslation := make(map[string]TomlData)
+	dataByLocale := make(map[string]TomlData)
 
-	// Need to be case-insensitive since we grab it from the filesystem
-	localeRegexp, err := regexp.Compile(`^[a-z]{2}(_[a-z]{2})?$`)
-	if err != nil {
-		return nil, fmt.Errorf("failed to compile locale regex: %w", err)
-	}
 	seenLocales := make(map[string]bool)
 	for _, file := range files {
 		locale := strings.ToLower(strings.TrimSuffix(filepath.Base(file), ".toml"))
 		if !localeRegexp.MatchString(locale) {
-			fmt.Fprintf(os.Stderr, "ignoring non-locale named file %s (got locale '%s', only accepting 'xx' or 'xx_xx')\n", file, locale)
+			fmt.Fprintf(os.Stderr, "ignoring file %s (filename maps to locale '%s', only accepting forms 'xx' or 'xx_xx')\n", file, locale)
 			continue
 		}
 		if seenLocales[locale] {
@@ -46,20 +56,36 @@ func ProcessTomlDir(tomlDir string) (map[string]TomlData, error) {
 			continue
 		}
 		seenLocales[locale] = true
+		if baseLocale == "" {
+			baseLocale = locale
+		}
 		fileData, err := os.ReadFile(file)
 		if err != nil {
-			return nil, err
+			return ProcessResult{}, err
 		}
 
 		data, err := parseContent(string(fileData))
 		if err != nil {
-			return nil, fmt.Errorf("failed to parse %s: %w", file, err)
+			return ProcessResult{}, fmt.Errorf("failed to parse %s: %w", file, err)
 		}
 		data.Locale = locale
-		langToTranslation[locale] = data
+		dataByLocale[locale] = data
 	}
 
-	return langToTranslation, nil
+	if errors := validateAllLocales(baseLocale, dataByLocale); len(errors) != 0 {
+		var errorMsg strings.Builder
+		errorMsg.WriteString(fmt.Sprintf("found %d validation errors", len(errors)))
+		for _, err := range errors {
+			errorMsg.WriteString("\n- ")
+			errorMsg.WriteString(err.Error())
+		}
+		return ProcessResult{}, fmt.Errorf("%s", errorMsg.String())
+	}
+
+	return ProcessResult{
+		BaseLocale:       baseLocale,
+		TomlDataByLocale: dataByLocale,
+	}, nil
 }
 
 var prohibitedNames = map[string]bool{
@@ -105,4 +131,89 @@ func parseContent(tomlData string) (TomlData, error) {
 		return TomlData{}, fmt.Errorf("unexpected type for key %s: %T", k, entry)
 	}
 	return data, nil
+}
+
+func validateSection(base, other map[string]string, sectionName string, otherLocale string) []error {
+	errors := make([]error, 0)
+	keyName := func(key string) string {
+		if sectionName == "" {
+			return key
+		}
+		return fmt.Sprintf("[%s]: %s", sectionName, key)
+	}
+
+	for key, baseValue := range base {
+		otherValue, exists := other[key]
+		if !exists {
+			errors = append(errors, fmt.Errorf("%s is missing translation '%s'", otherLocale, keyName(key)))
+		}
+		sigBase := GetFuncSignatureId(key, baseValue)
+		sigOther := GetFuncSignatureId(key, otherValue)
+		if sigBase != sigOther {
+			errors = append(errors, fmt.Errorf("%s has the wrong signature for '%s'. Should be `%s`, but was `%s`", otherLocale, keyName(key), sigBase, sigOther))
+		}
+	}
+
+	for key := range other {
+		if _, exists := base[key]; !exists {
+			errors = append(errors, fmt.Errorf("%s has an unknown translation '%s'", otherLocale, keyName(key)))
+		}
+	}
+	return errors
+}
+
+func validateSections(base, other map[string]map[string]string, otherLocale string) []error {
+	errors := make([]error, 0)
+
+	for sectionName, baseSection := range base {
+		otherSection, exists := other[sectionName]
+		if !exists {
+			errors = append(errors, fmt.Errorf("%s is missing section [%s]", otherLocale, sectionName))
+			continue
+		}
+
+		if sectionErrors := validateSection(baseSection, otherSection, sectionName, otherLocale); len(sectionErrors) != 0 {
+			for _, err := range sectionErrors {
+				errMsg := fmt.Sprintf("%s > %s", otherLocale, err.Error())
+				errors = append(errors, fmt.Errorf(errMsg))
+			}
+		}
+	}
+
+	for sectionName := range other {
+		if _, exists := base[sectionName]; !exists {
+			errors = append(errors, fmt.Errorf("%s has unknown section [%s]", otherLocale, sectionName))
+		}
+	}
+
+	return errors
+}
+
+func validateAllLocales(baseLocale string, localeToData map[string]TomlData) []error {
+	errors := make([]error, 0)
+	baseLocaleData, ok := localeToData[baseLocale]
+	if !ok {
+		errors = append(errors, fmt.Errorf("base locale '%s' not found in provided locales", baseLocale))
+		return errors // critical error
+	}
+
+	for otherLocale, otherLocaleData := range localeToData {
+		if otherLocale == baseLocale {
+			continue
+		}
+
+		if sectionErrors := validateSection(baseLocaleData.root, otherLocaleData.root, "", otherLocale); len(sectionErrors) != 0 {
+			for _, err := range sectionErrors {
+				errors = append(errors, err)
+			}
+		}
+
+		if sectionErrors := validateSections(baseLocaleData.sections, otherLocaleData.sections, otherLocale); len(sectionErrors) != 0 {
+			for _, err := range sectionErrors {
+				errors = append(errors, err)
+			}
+		}
+	}
+
+	return errors
 }
