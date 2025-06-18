@@ -1,6 +1,5 @@
 # Bad TOML file. Rename to en_UK.toml to test validation
 root_message = "Welcome"
-flavorPhrase = "Organise Colours of Cancelled Biscuits"
 
 [menu_x]
 message = "The {name} has {count} notification{{s}}"
