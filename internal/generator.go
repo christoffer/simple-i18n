@@ -132,10 +132,15 @@ func GetBaseTranslation(baseTranslation TomlData, packageName string) ([]byte, e
 		sectionTypeName := fmt.Sprintf("Translation_%s", sectionName)
 		sectionNameToType[sectionName] = sectionTypeName
 
-		sb.WriteString(fmt.Sprintf("type %s interface{\n\n", sectionTypeName))
+		sb.WriteString(fmt.Sprintf("type %s interface{\n", sectionTypeName))
 		sortedKeys := getKeysSorted(sectionData)
-		for _, key := range sortedKeys {
-			genFuncSignature(&sb, key, sectionData[key])
+		for index, key := range sortedKeys {
+			value := sectionData[key]
+			if index != 0 {
+				sb.WriteString("\n")
+			}
+			sb.WriteString(fmt.Sprintf("// %s\n", strings.TrimSpace(value)))
+			genFuncSignature(&sb, key, value)
 		}
 		sb.WriteString("}\n\n")
 	}
@@ -147,8 +152,13 @@ func GetBaseTranslation(baseTranslation TomlData, packageName string) ([]byte, e
 	}
 	sb.WriteString("\n")
 	sortedKeys := getKeysSorted(baseTranslation.root)
-	for _, key := range sortedKeys {
-		genFuncSignature(&sb, key, baseTranslation.root[key])
+	for index, key := range sortedKeys {
+		value := baseTranslation.root[key]
+		if index != 0 {
+			sb.WriteString("\n")
+		}
+		sb.WriteString(fmt.Sprintf("// \"%s\"\n", value))
+		genFuncSignature(&sb, key, value)
 	}
 	sb.WriteString("}\n\n")
 
