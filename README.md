@@ -111,15 +111,20 @@ t.PlaceGreeting(2, "Paris", "Bonjour") // "In Paris, we say 'Bonjour, Paris!', 2
 
 ### Pluralization
 
-Pluralization is handled using the `{{...}}` notation, where anything in the brackets appear only in plural form. Adding a pluralization in a text will add a `count` parameter to the function. The `{count}` parameter is also available in the text.
+Pluralization is handled using `{{one|other}}` notation, e.g. `{{cat|cats}}`. A shorthand notation can be used to only specify the plural form `cat{{s}}`. 
+
+Using pluralization in a text will add a `count` parameter to the function. The `{count}` parameter is also available in the text.
 
 ```go
 // en.toml
 apples = "You have {count} apple{{s}}. That's a lot of apple{{s}}!"
+critera = "You have {count} {{criterium|criteria}}."
 
 // en.go
 t.Apples(1) // "You have 1 apple. That's a lot of apple!"
 t.Apples(2) // "You have 2 apples. That's a lot of apples!"
+t.Criteria(1) // "You have 1 criterium."
+t.Criteria(2) // "You have 2 criteria."
 ```
 
 ## Generated files
