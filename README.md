@@ -50,9 +50,7 @@ func main() {
 
 ## Installation
 
-```bash
-go build -o bin/simple-i18n ./cmd/cli/main.go
-```
+TODO
 
 ## Usage
 
@@ -71,118 +69,66 @@ go build -o bin/simple-i18n ./cmd/cli/main.go
 ### Example
 
 ```bash
-./bin/simple-i18n -i ./translations -o ./i18n -p i18n -b en
+./bin/simple-i18n -i ../translations -o . -p inter -b sv
 ```
 
-## Translation Files
+## Translation
 
-Translation files are TOML files that specify a key and a translation template. The key determines the function name, and the template determines the function signature and the output.
+Translation files specify message, template pairs in TOML files. 
+The message determines the function name, and the template determines the function output. The function signature is resolved from the template of the base language.
 
-### Structure
+Filenames matter. Only translation files named like a locale (`xx.toml` or `xx_yy.toml`) are processed. The locale is case-insensitive. 
 
-You can have messages in the root, or in a subsection (one level only).
+E.g. `en.toml`, `de.toml`, `sv_fi.toml`, and `en_UK.toml` are all processed. A file like `english.toml` is not.
 
-#### Input
+
+### Content
+You can have messages in the root, or in a subsection (one level only). Only string values are supported.
 
 ```toml
-# en.toml
-message = "Hi"
+# en.tomle
+title = "Welcome to the site"
 
-[my_section]
-message = "Hello from section"
+[user_page]
+title = "User page"
 ```
 
-#### Usage
+### Substitutions
+
+Substitutions are supported in the translation text with `{param}`. Note that `param` must be a valid Go identifier. 
+
+Substitutions appear in the function signature in the order they appear in the text of the base language, _except_ for `count` which is always first. If a substitution is used more than once, only the first usage appear in the signature. 
+
+All substitutions are of type string, except for `count` which is of type int.
 
 ```go
-package main
+// en.toml
+place_greeting = "In {place}, we say '{greeting}, {place}!', {count} time{{s}}"
 
-import (
-	"fmt"
-	"i18n"
-)
-
-func main() {
-	t := i18n.New()
-	fmt.Printf("%s", t.Message())
-	fmt.Printf("%s", t.MySection().Message())
-}
-
+// en.go
+t.PlaceGreeting(2, "Paris", "Bonjour") // "In Paris, we say 'Bonjour, Paris!', 2 times"
 ```
 
-#### Generated
+### Pluralization
+
+Pluralization is handled using the `{{...}}` notation, where anything in the brackets appear only in plural form. Adding a pluralization in a text will add a `count` parameter to the function. The `{count}` parameter is also available in the text.
 
 ```go
-package i18n
+// en.toml
+apples = "You have {count} apple{{s}}. That's a lot of apple{{s}}!"
 
-type TranslationEn_MySection struct {}
-
-func (t *TranslationEn_MySection) Message() string {
-    return "Hello from section"
-}
-
-type TranslationEn struct {
-	mySection     TranslationEn_MySection
-}
-
-func (t *TranslationEn) Message() string {
-    return "Hi"
-}
+// en.go
+t.Apples(1) // "You have 1 apple. That's a lot of apple!"
+t.Apples(2) // "You have 2 apples. That's a lot of apples!"
 ```
 
-### Parameters
-
-Parameters are specified using `{param}` syntax. The param name must be a valid Go identifier. All generated arguments are of type `string`, except for `count` which is of type `int`.
-
-**en.toml**:
-```toml
-root_message = "Welcome"
-flavorPhrase = "Organize Colors of Canceled Cookies"
-
-[menu]
-message = "The {name} has {count} notification{{s}}"
-family = "The {thing} was happy with a family of {thing}{{s}}"
-
-[specials]
-count = "Count: {count}"
-score = "Score: {score}"
-point = "Point{{s}}"
-```
-
-**sv.toml**:
-```toml
-root_message = "Välkommen"  
-flavorPhrase = "Organisera färger av avbrutna kakor"
-
-[menu]
-message = "{name} har {count} notis{{er}}"
-family = "{thing} var glad med en familj av {thing}{{ar}}"
-
-[specials]
-count = "Antal: {count}"
-score = "Poäng: {score}"
-point = "Poäng{{}}"
-```
-
-## Generated Code
+## Generated files
 
 The tool generates:
 
-- `base.go`: Interface defining all translation methods
+- `base.go`: Interface defining all translation methods. This is based on the base language.
 - `<locale>.go`: Implementation for each locale
 - `translator.go`: Factory for creating locale-specific translators
-
-### Usage in Go Code
-
-```go
-import "your-project/i18n"
-
-// Create translator for a specific locale
-translator := i18n.NewTranslator("sv")
-
-// Use translations with parameters
-message := translator.MenuMessage("John", 5) // "John har 5 notiser"
-```
 
 ## Development
 
@@ -191,7 +137,10 @@ make build # => bin/simple-i18n
 make test # Builds the binary and a test integration app
 ```
 
-The project structure:
-- `cmd/cli/`: CLI application
-- `cmd/test/`: Integration test app
-- `internal/`: Logic
+## License
+
+MIT
+
+## Credits
+
+Inspired by the excellent [typesafe-i18n](https://github.com/ivanhofer/typesafe-i18n) for TypeScript.
