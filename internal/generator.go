@@ -126,8 +126,8 @@ func GetBaseTranslation(baseTranslation TomlParseResult, packageName string) ([]
 			if index != 0 {
 				sb.WriteString("\n")
 			}
-			sb.WriteString(trFunc.DocString)
-			sb.WriteString(trFunc.Signature())
+			sb.WriteString(trFunc.DocString + "\n")
+			sb.WriteString(trFunc.Signature() + "\n")
 		}
 		sb.WriteString("}\n\n")
 	}
