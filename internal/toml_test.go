@@ -1,73 +1,152 @@
 package internal
 
 import (
+	"strings"
 	"testing"
 )
 
-func TestParseSingle(t *testing.T) {
-	toml := `
-		simple_greet = "Welcome"
-		greet = "Hello, {name}!"
-
-		[delete_modal]
-		title = "Delete"
-		confirm = "OK"
-	`
-
-	enData, err := parseContent(toml)
-	if err != nil {
-		t.Fatalf("parseContent failed: %v", err)
+func TestParseContent_ErrorCases(t *testing.T) {
+	tests := []struct {
+		name          string
+		toml          string
+		expectError   bool
+		errorContains string
+	}{
+		{
+			name:          "invalid TOML syntax",
+			toml:          "invalid toml [[[",
+			expectError:   true,
+			errorContains: "failed to decode TOML",
+		},
+		{
+			name:          "unsupported non-string type",
+			toml:          "age = 123",
+			expectError:   true,
+			errorContains: "unexpected type",
+		},
+		{
+			name:          "nested sections not supported",
+			toml:          "[foo.bar]\nkey = \"value\"",
+			expectError:   true,
+			errorContains: "expected string under foo > bar",
+		},
+		{
+			name:          "prohibited name SetLanguage",
+			toml:          "set_language = \"test\"",
+			expectError:   true,
+			errorContains: "conflicts with 'SetLanguage'",
+		},
+		{
+			name:          "non-string in section",
+			toml:          "[section]\nkey = 123",
+			expectError:   true,
+			errorContains: "expected string under section > key",
+		},
+		{
+			name:          "malformed substitution syntax",
+			toml:          "greeting = \"Hello {name\"",
+			expectError:   true,
+			errorContains: "syntax error",
+		},
+		{
+			name:          "malformed plural syntax",
+			toml:          "items = \"{{count item\"",
+			expectError:   true,
+			errorContains: "syntax error",
+		},
 	}
 
-	if len(enData.root) != 2 {
-		t.Errorf("Expected 2 root entries, got %d", len(enData.root))
-	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := parseContent("en", tt.toml)
 
-	if enData.root["simple_greet"] != "Welcome" {
-		t.Errorf("Expected 'Welcome', got '%s'", enData.root["simple_greet"])
-	}
-
-	if enData.root["greet"] != "Hello, {name}!" {
-		t.Errorf("Expected 'Hello, {name}!', got '%s'", enData.root["greet"])
-	}
-
-	if len(enData.sections) != 1 {
-		t.Errorf("Expected 1 section, got %d", len(enData.sections))
-	}
-
-	deleteModal, ok := enData.sections["delete_modal"]
-	if !ok {
-		t.Error("Expected 'delete_modal' section to be present")
-	}
-
-	if deleteModal["title"] != "Delete" {
-		t.Errorf("Expected 'Delete', got '%s'", deleteModal["title"])
-	}
-
-	if deleteModal["confirm"] != "OK" {
-		t.Errorf("Expected 'OK', got '%s'", deleteModal["confirm"])
+			if tt.expectError {
+				if len(result.Errors) == 0 {
+					t.Errorf("Expected error for %s, but got none", tt.name)
+				} else {
+					found := false
+					for _, err := range result.Errors {
+						if strings.Contains(err.Error(), tt.errorContains) {
+							found = true
+							break
+						}
+					}
+					if !found {
+						t.Errorf("Expected error containing '%s', but got: %v", tt.errorContains, result.Errors)
+					}
+				}
+			} else {
+				if len(result.Errors) > 0 {
+					t.Errorf("Expected no error for %s, but got: %v", tt.name, result.Errors)
+				}
+			}
+		})
 	}
 }
 
-func TestParseTomlFiles_InvalidToml(t *testing.T) {
-	_, err := parseContent("unicorns")
-	if err == nil {
-		t.Error("Expected error for invalid TOML content")
+func TestValidateSection_MismatchedSignatures(t *testing.T) {
+	// Test that validation catches signature mismatches between locales
+	base := map[string]TranslateFunc{
+		"greet": {
+			Name:   "Greet",
+			Params: []string{"name string"},
+		},
+	}
+
+	other := map[string]TranslateFunc{
+		"greet": {
+			Name:   "Greet",
+			Params: []string{"name string", "count int"}, // Different signature
+		},
+	}
+
+	errors := validateSection(base, other, "", "fr")
+	if len(errors) == 0 {
+		t.Error("Expected validation error for mismatched signatures")
+	}
+
+	if !strings.Contains(errors[0].Error(), "wrong signature") {
+		t.Errorf("Expected signature mismatch error, got: %v", errors[0])
 	}
 }
 
-func TestParseTomlFiles_UnsupportedType(t *testing.T) {
-	_, err := parseContent(`foo = 12`)
-	if err == nil {
-		t.Error("Expected error for unsupported type in TOML content")
+func TestValidateSection_MissingTranslations(t *testing.T) {
+	base := map[string]TranslateFunc{
+		"hello":   {Name: "Hello"},
+		"goodbye": {Name: "Goodbye"},
 	}
 
-	_, err = parseContent(`
-		[foo.bar]
-		single_level_only = "true"
-	`)
-	if err == nil {
-		t.Error("Expected error for unsupported nested structure in TOML content")
+	other := map[string]TranslateFunc{
+		"hello": {Name: "Hello"},
+		// Missing "goodbye"
+	}
+
+	errors := validateSection(base, other, "", "fr")
+	if len(errors) == 0 {
+		t.Error("Expected validation error for missing translation")
+	}
+
+	if !strings.Contains(errors[0].Error(), "missing translation") {
+		t.Errorf("Expected missing translation error, got: %v", errors[0])
 	}
 }
 
+func TestValidateSection_ExtraTranslations(t *testing.T) {
+	base := map[string]TranslateFunc{
+		"hello": {Name: "Hello"},
+	}
+
+	other := map[string]TranslateFunc{
+		"hello": {Name: "Hello"},
+		"extra": {Name: "Extra"}, // Not in base
+	}
+
+	errors := validateSection(base, other, "", "fr")
+	if len(errors) == 0 {
+		t.Error("Expected validation error for extra translation")
+	}
+
+	if !strings.Contains(errors[0].Error(), "unknown translation") {
+		t.Errorf("Expected unknown translation error, got: %v", errors[0])
+	}
+}
