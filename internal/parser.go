@@ -7,6 +7,7 @@ type Token struct {
 	Value string
 	Start int // Index into input string, inclusive
 	End   int // Index into input string, exclusive
+	Error string
 }
 
 type TokenType int
@@ -30,22 +31,34 @@ func tokenize(input string) []Token {
 		return 0
 	}
 
-	endToken := func(t TokenType, tokenEnd int) {
+	endToken := func(t TokenType, tokenEnd int, isPremature bool) {
+		errorMessage := ""
 		if tokenStart == tokenEnd {
 			return // no content
 		}
 		value := input[tokenStart:tokenEnd]
 		if curType == TokenSub {
-			value = input[tokenStart+1 : tokenEnd-1]
+			if isPremature {
+				errorMessage = "missing end '}'"
+				value = input[tokenStart+1 : tokenEnd]
+			} else {
+				value = input[tokenStart+1 : tokenEnd-1]
+			}
 		}
 		if curType == TokenPlural {
-			value = input[tokenStart+2 : tokenEnd-2]
+			if isPremature {
+				errorMessage = "missing end '}}'"
+				value = input[tokenStart+2 : tokenEnd]
+			} else {
+				value = input[tokenStart+2 : tokenEnd-2]
+			}
 		}
 		tokens = append(tokens, Token{
 			Type:  curType,
 			Value: value,
 			Start: tokenStart,
 			End:   tokenEnd,
+			Error: errorMessage,
 		})
 	}
 
@@ -53,7 +66,7 @@ func tokenize(input string) []Token {
 		c := input[i]
 		if c == '{' {
 			if curType == TokenText {
-				endToken(TokenText, i)
+				endToken(TokenText, i, false)
 				tokenStart = i
 				if peek() == '{' {
 					i += 1 // skip next '{'
@@ -66,12 +79,12 @@ func tokenize(input string) []Token {
 
 		if c == '}' {
 			if curType == TokenSub {
-				endToken(TokenSub, i+1)
+				endToken(TokenSub, i+1, false)
 				tokenStart = i + 1
 				curType = TokenText
 			} else if curType == TokenPlural {
 				if peek() == '}' {
-					endToken(TokenPlural, i+2)
+					endToken(TokenPlural, i+2, false)
 					tokenStart = i + 2
 					i += 1 // skip peeked '}'
 					curType = TokenText
@@ -84,7 +97,7 @@ func tokenize(input string) []Token {
 
 	// End current token if there's text left
 	if tokenStart < len(input) {
-		endToken(curType, len(input))
+		endToken(curType, len(input), true)
 	}
 
 	return tokens
