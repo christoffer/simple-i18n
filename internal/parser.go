@@ -17,13 +17,6 @@ const (
 	TokenPlural
 )
 
-type ParseResult struct {
-	HasPlural    bool
-	Variables    []string
-	SingularForm string
-	PluralForm   string
-}
-
 func tokenize(input string) []Token {
 	tokens := make([]Token, 0)
 	i := 0
