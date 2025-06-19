@@ -1,6 +1,5 @@
-# Build CLI
 build:
-	@go build -o bin/simple-i18n ./cmd/cli/main.go
+	@go build -o bin/simple-i18n ./cmd/simple-i18n/main.go
 
 # Test integration
 test: build
