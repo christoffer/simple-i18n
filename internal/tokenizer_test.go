@@ -119,6 +119,20 @@ func TestTokenize(t *testing.T) {
 				{Type: TokenText, Value: "}", Start: 13, End: 14},
 			},
 		},
+		{
+			name:  "bad case: no closing }",
+			input: "{sub",
+			expected: []Token{
+				{Type: TokenSub, Value: "sub", Start: 0, End: 4, Error: "missing end '}'"},
+			},
+		},
+		{
+			name:  "bad case: no closing }}",
+			input: "{{plural",
+			expected: []Token{
+				{Type: TokenPlural, Value: "plural", Start: 0, End: 8, Error: "missing end '}}'"},
+			},
+		},
 	}
 
 	for _, tt := range tests {
@@ -145,6 +159,9 @@ func TestTokenize(t *testing.T) {
 				}
 				if token.End != expected.End {
 					t.Errorf("Token %d: expected end %d, got %d", i, expected.End, token.End)
+				}
+				if token.Error != expected.Error {
+					t.Errorf("Token %d: expected error %q, got %q", i, expected.Error, token.Error)
 				}
 			}
 		})

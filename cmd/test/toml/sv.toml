@@ -9,3 +9,4 @@ family = "{thing} var glad med en familj av {thing}{{ar}}"
 count = "Antal: {count}" # Count without plurals
 criteria = "Det finns {count} {{kreterium|kriterier}}"
 point = "Poäng{{}}" # Plural form in swedish is empty
+ecaped = 'Några % hit eller "dit"?'

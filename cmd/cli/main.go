@@ -41,21 +41,22 @@ func main() {
 
 	validatePackageName(packageName)
 
-	if err := os.MkdirAll(outputDir, 0755); err != nil {
-		bail("Error creating output directory: %v", err)
+	err := os.MkdirAll(outputDir, 0755)
+	if err != nil {
+		bail("Error creating output directory: %s", err)
 	}
 
 	processResult, err := internal.ProcessTomlDir(tomlDir, baseLocale)
 	if err != nil {
-		bail("Error parsing TOML files: %v", err)
+		bail("Generation prevented:\n%s", err)
 	}
 
-	if len(processResult.TomlDataByLocale) == 0 {
+	if len(processResult.ParsedFuncsByLocale) == 0 {
 		bail("No TOML files found in %s", tomlDir)
 	}
 
 	allLocales := make([]string, 0)
-	for locale, tomlData := range processResult.TomlDataByLocale {
+	for locale, tomlData := range processResult.ParsedFuncsByLocale {
 		content, err := internal.GetTranslationImpl(tomlData, packageName)
 		if err != nil {
 			bail("Error generating translation implementation for %s: %v", locale, err)
@@ -64,7 +65,7 @@ func main() {
 		allLocales = append(allLocales, locale)
 	}
 
-	baseLocaleData := processResult.TomlDataByLocale[processResult.BaseLocale]
+	baseLocaleData := processResult.ParsedFuncsByLocale[processResult.BaseLocale]
 	if content, err := internal.GetBaseTranslation(baseLocaleData, packageName); err != nil {
 		bail("Error generating base translation interface: %v", err)
 	} else {

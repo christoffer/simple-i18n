@@ -9,3 +9,4 @@ family = "The {thing} was happy with a family of {thing}{{s}}"
 count = "Count: {count}"
 criteria = "There are {count} {{criterion|criteria}}"
 point = "Point{{s}}"
+ecaped = 'A couple of % here or "there"?'
