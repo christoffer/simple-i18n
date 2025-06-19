@@ -22,16 +22,13 @@ func getKeysSorted(data map[string]TranslateFunc) []string {
 	return keys
 }
 
-func genFuncImplementations(sb *strings.Builder, structName string, trFuncs map[string]TranslateFunc, deps map[string]bool) error {
+func genFuncImplementations(sb *strings.Builder, structName string, trFuncs map[string]TranslateFunc) error {
 	keys := getKeysSorted(trFuncs)
 	for _, key := range keys {
 		trFunc := trFuncs[key]
 		sb.WriteString(fmt.Sprintf("func (t *%s) %s(%s) string {\n", structName, trFunc.Name, strings.Join(trFunc.Params, ", ")))
 		sb.WriteString(trFunc.Body)
 		sb.WriteString("}\n\n")
-		if len(trFunc.Params) > 0 {
-			deps["fmt"] = true
-		}
 	}
 	return nil
 }
@@ -44,8 +41,6 @@ func GetTranslationImpl(data TomlParseResult, packageName string) ([]byte, error
 	  package %s
 	`, packageName)
 
-	deps := make(map[string]bool)
-
 	// Write all sections first
 	sectionNameToType := make(map[string]string)
 	for sectionKey, sectionData := range data.sections {
@@ -55,7 +50,7 @@ func GetTranslationImpl(data TomlParseResult, packageName string) ([]byte, error
 		sectionNameToType[sectionName] = sectionStructName
 
 		sb.WriteString(fmt.Sprintf("type %s struct{}\n\n", sectionStructName))
-		if err := genFuncImplementations(&sb, sectionStructName, sectionData, deps); err != nil {
+		if err := genFuncImplementations(&sb, sectionStructName, sectionData); err != nil {
 			return nil, err
 		}
 	}
@@ -78,17 +73,11 @@ func GetTranslationImpl(data TomlParseResult, packageName string) ([]byte, error
 		sb.WriteString("}\n\n")
 	}
 
-	if err := genFuncImplementations(&sb, rootStructName, data.root, deps); err != nil {
+	if err := genFuncImplementations(&sb, rootStructName, data.root); err != nil {
 		return nil, err
 	}
 
-	if len(deps) > 0 {
-		header += "\nimport (\n"
-		for dep := range deps {
-			header += fmt.Sprintf("\"%s\"\n", dep)
-		}
-		header += "\n)\n"
-	}
+	header += "\nimport \"fmt\"\n"
 
 	stringContent := header + sb.String()
 	formatted, err := formatCode(stringContent)
