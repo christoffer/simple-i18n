@@ -133,7 +133,7 @@ func GetBaseTranslation(baseTranslation TomlParseResult, packageName string) ([]
 		if index != 0 {
 			sb.WriteString("\n")
 		}
-		sb.WriteString(fmt.Sprintf("// \"%s\"\n", trFunc.DocString))
+		sb.WriteString(trFunc.DocString + "\n")
 		sb.WriteString(trFunc.Signature())
 	}
 	sb.WriteString("}\n\n")
