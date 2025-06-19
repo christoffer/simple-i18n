@@ -267,22 +267,14 @@ func capitalizeFirstLetter(s string) string {
 	return strings.ToUpper(s[:1]) + s[1:]
 }
 
-func genSprintfReturn(sb *strings.Builder, value string, subs []string) {
+func genSprintfReturn(sb *strings.Builder, value string, fmtArgs []string) {
 	fmtString := value
-	for _, sub := range subs {
-		placeholder := "%s"
-		if sub == "count" {
-			placeholder = "%d"
-		}
-		fmtString = strings.ReplaceAll(fmtString, fmt.Sprintf("{%s}", sub), placeholder)
-	}
-
 	fmtString = strconv.Quote(fmtString)
-
-	if len(subs) > 0 {
-		fmtArgs := strings.Join(subs, ", ")
-		sb.WriteString(fmt.Sprintf("\treturn fmt.Sprintf(%s, %s)\n", fmtString, fmtArgs))
-	} else {
-		sb.WriteString(fmt.Sprintf("\treturn %s\n", fmtString))
+	// NOTE(christoffer): We could technically return the value directly if there are no format args.
+	// However, use Sprintf() always since the fmtString potentially contains escaped characters.
+	argPart := ""
+	if len(fmtArgs) > 0 {
+		argPart = ", " + strings.Join(fmtArgs, ", ")
 	}
+	sb.WriteString(fmt.Sprintf("\treturn fmt.Sprintf(%s%s)\n", fmtString, argPart))
 }

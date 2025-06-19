@@ -117,9 +117,9 @@ func parseTranslateFunc(value string) (TranslateFunc, error) {
 	for _, token := range tokens {
 		switch token.Type {
 		case TokenText:
-			// TODO(christoffer): Escape %
-			returnSingular.WriteString(token.Value)
-			returnPlural.WriteString(token.Value)
+			escapedValue := strings.ReplaceAll(token.Value, `%`, `%%`)
+			returnSingular.WriteString(escapedValue)
+			returnPlural.WriteString(escapedValue)
 		case TokenSub:
 			if !seenFuncArgs[token.Value] {
 				if token.Value == "count" {

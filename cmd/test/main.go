@@ -26,6 +26,8 @@ func printAllTranslations(t *i18n.Translator, language string) {
 	fmt.Printf("Point (1): %s\n", specials.Point(1))
 	fmt.Printf("Point (5): %s\n", specials.Point(5))
 
+	fmt.Printf("Escaped: %s\n", specials.Ecaped())
+
 	fmt.Println()
 }
 
