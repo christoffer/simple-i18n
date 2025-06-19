@@ -22,27 +22,32 @@ func getKeysSorted(data map[string]string) []string {
 	return keys
 }
 
-func genFuncImpl(sb *strings.Builder, name string, data map[string]string) bool {
+func genFuncImplementations(sb *strings.Builder, structName string, data map[string]string) bool {
 	hasParams := false
 	keys := getKeysSorted(data)
 	for _, key := range keys {
-		strValue := data[key]
-		methodName := toPublicName(key)
-		params, body := getMethodDef(strValue)
-		sb.WriteString(fmt.Sprintf("func (t *%s) %s(%s) string {\n", name, methodName, strings.Join(params, ", ")))
-		sb.WriteString(body)
-		sb.WriteString("}\n\n")
-		if len(params) > 0 {
+		implHasParams := genFuncImplementation(sb, structName, key, data[key])
+		if implHasParams {
 			hasParams = true
 		}
 	}
 	return hasParams
 }
 
+func genFuncImplementation(sb *strings.Builder, structName string, key string, value string) bool {
+	methodName := toPublicName(key)
+	trFunc, _ := parseTranslateFunc(value)
+	sb.WriteString(fmt.Sprintf("func (t *%s) %s(%s) string {\n", structName, methodName, strings.Join(trFunc.Params, ", ")))
+	sb.WriteString(trFunc.Body)
+	sb.WriteString("}\n\n")
+	hasParams := len(trFunc.Params) > 0
+	return hasParams
+}
+
 func genFuncSignature(sb *strings.Builder, key string, value string) {
 	funcName := toPublicName(key)
-	params, _ := getMethodDef(value)
-	sb.WriteString(fmt.Sprintf("%s(%s) string\n", funcName, strings.Join(params, ", ")))
+	trFunc, _ := parseTranslateFunc(value)
+	sb.WriteString(fmt.Sprintf("%s(%s) string\n", funcName, strings.Join(trFunc.Params, ", ")))
 }
 
 // GetFuncSignatureId generates a unique identifier for a function signature based on its parameters.
@@ -71,7 +76,7 @@ func GetTranslationImpl(data TomlData, packageName string) ([]byte, error) {
 		sectionNameToType[sectionName] = sectionStructName
 
 		sb.WriteString(fmt.Sprintf("type %s struct{}\n\n", sectionStructName))
-		hasParams := genFuncImpl(&sb, sectionStructName, sectionData)
+		hasParams := genFuncImplementations(&sb, sectionStructName, sectionData)
 		if hasParams {
 			needsFmt = true
 		}
@@ -95,7 +100,7 @@ func GetTranslationImpl(data TomlData, packageName string) ([]byte, error) {
 		sb.WriteString("}\n\n")
 	}
 
-	hasParams := genFuncImpl(&sb, rootStructName, data.root)
+	hasParams := genFuncImplementations(&sb, rootStructName, data.root)
 	if hasParams {
 		needsFmt = true
 	}
@@ -259,76 +264,6 @@ func capitalizeFirstLetter(s string) string {
 		return s
 	}
 	return strings.ToUpper(s[:1]) + s[1:]
-}
-
-func getMethodDef(value string) ([]string, string) {
-	tokens := tokenize(value)
-
-	funcArgs := make([]string, 0)
-	seenFuncArgs := make(map[string]bool)
-	fmtArgs := make([]string, 0)
-
-	var returnSingular strings.Builder
-	var returnPlural strings.Builder
-
-	hasPlural := false
-
-	for _, token := range tokens {
-		switch token.Type {
-		case TokenText:
-			// TODO(christoffer): Escape %
-			returnSingular.WriteString(token.Value)
-			returnPlural.WriteString(token.Value)
-		case TokenSub:
-			if !seenFuncArgs[token.Value] {
-				if token.Value == "count" {
-					funcArgs = append([]string{"count int"}, funcArgs...)
-				} else {
-					funcArgs = append(funcArgs, token.Value+" string")
-				}
-				seenFuncArgs[token.Value] = true
-			}
-			fmtArgs = append(fmtArgs, token.Value)
-			placeholder := "%s"
-			if token.Value == "count" {
-				placeholder = "%d"
-			}
-			returnSingular.WriteString(placeholder)
-			returnPlural.WriteString(placeholder)
-		case TokenPlural:
-			if !seenFuncArgs["count"] {
-				funcArgs = append([]string{"count int"}, funcArgs...)
-				seenFuncArgs["count"] = true
-			}
-			hasPlural = true
-			// Split on |, singular first and plural second
-			parts := strings.Split(token.Value, "|")
-			singularForm := parts[0]
-			var pluralForm string
-			if len(parts) == 1 {
-				singularForm = ""
-				pluralForm = parts[0]
-			} else {
-				pluralForm = strings.Join(parts[1:], "")
-			}
-			returnSingular.WriteString(pluralForm)
-			returnPlural.WriteString(singularForm)
-		}
-	}
-
-	var body strings.Builder
-
-	if hasPlural {
-		body.WriteString("\tif count == 1 {\n")
-		genSprintfReturn(&body, returnSingular.String(), fmtArgs)
-		body.WriteString("\t} else {\n")
-		genSprintfReturn(&body, returnPlural.String(), fmtArgs)
-		body.WriteString("\t}\n")
-	} else {
-		genSprintfReturn(&body, returnSingular.String(), fmtArgs)
-	}
-
-	return funcArgs, body.String()
 }
 
 func genSprintfReturn(sb *strings.Builder, value string, subs []string) {
