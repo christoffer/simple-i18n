@@ -153,19 +153,18 @@ func GetTranslator(allLocales []string, packageName string, baseLocaleData TomlP
 	sb.WriteString("import \"fmt\"\n\n")
 
 	sb.WriteString("type Translator struct {\n")
-	sb.WriteString("\tlangs map[string]Translation\n")
+	sb.WriteString("\ttranslations map[string]Translation\n")
 	sb.WriteString("\tcurrent Translation\n")
 	sb.WriteString("}\n\n")
 
 	sb.WriteString("func New() *Translator {\n")
 	sb.WriteString("\tt := &Translator{\n")
-	sb.WriteString("\t\tlangs: make(map[string]Translation),\n")
+	sb.WriteString("\t\ttranslations: make(map[string]Translation),\n")
 	sb.WriteString("\t}\n\n")
 
-	// Register all languages
-	for index, lang := range allLocales {
-		locale := toPublicName(lang)
-		structName := fmt.Sprintf("Translation%s", locale)
+	// Register all locales
+	for index, locale := range allLocales {
+		structName := fmt.Sprintf("Translation%s", toPublicName(locale))
 
 		if index == 0 {
 			// Default to base locale
@@ -173,14 +172,14 @@ func GetTranslator(allLocales []string, packageName string, baseLocaleData TomlP
 			sb.WriteString(fmt.Sprintf("\tt.current = &Translation%s{}\n\n", baseLocale))
 		}
 
-		sb.WriteString(fmt.Sprintf("\tt.langs[\"%s\"] = &%s{}\n", lang, structName))
+		sb.WriteString(fmt.Sprintf("\tt.translations[\"%s\"] = &%s{}\n", locale, structName))
 	}
 
 	sb.WriteString("\n\treturn t\n")
 	sb.WriteString("}\n\n")
 
 	sb.WriteString("func (t *Translator) SetLanguage(l string) error {\n")
-	sb.WriteString("\ttranslation, exists := t.langs[l]\n")
+	sb.WriteString("\ttranslation, exists := t.translations[l]\n")
 	sb.WriteString("\tif !exists {\n")
 	sb.WriteString("\t\treturn fmt.Errorf(\"language %s not found\", l)\n")
 	sb.WriteString("\t}\n")
