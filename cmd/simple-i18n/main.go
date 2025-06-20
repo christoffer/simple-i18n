@@ -30,7 +30,7 @@ func main() {
 	flag.Parse()
 
 	if len(os.Args) < 2 {
-		fmt.Printf("Usage: %s\n", os.Args[0])
+		fmt.Printf("Usage: simple-i18n\n")
 		flag.PrintDefaults()
 		os.Exit(1)
 	}
