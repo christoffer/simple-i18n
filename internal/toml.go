@@ -120,7 +120,8 @@ func ProcessTomlDir(tomlDir string, baseLocale string) (ProcessedLocale, error) 
 }
 
 var prohibitedNames = map[string]bool{
-	"SetLanguage": true,
+	"SetLanguage":   true,
+	"NewTranslator": true,
 }
 
 func parseContent(locale string, tomlData string) TomlParseResult {

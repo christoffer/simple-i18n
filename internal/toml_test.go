@@ -37,6 +37,12 @@ func TestParseContent_ErrorCases(t *testing.T) {
 			errorContains: "conflicts with 'SetLanguage'",
 		},
 		{
+			name:          "prohibited name NewTranslator",
+			toml:          "new_translator = \"test\"",
+			expectError:   true,
+			errorContains: "conflicts with 'NewTranslator'",
+		},
+		{
 			name:          "non-string in section",
 			toml:          "[section]\nkey = 123",
 			expectError:   true,

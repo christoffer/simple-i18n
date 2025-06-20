@@ -157,7 +157,7 @@ func GetTranslator(allLocales []string, packageName string, baseLocaleData TomlP
 	sb.WriteString("\tcurrent Translation\n")
 	sb.WriteString("}\n\n")
 
-	sb.WriteString("func New() *Translator {\n")
+	sb.WriteString("func NewTranslator() *Translator {\n")
 	sb.WriteString("\tt := &Translator{\n")
 	sb.WriteString("\t\ttranslations: make(map[string]Translation),\n")
 	sb.WriteString("\t}\n\n")

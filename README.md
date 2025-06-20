@@ -30,7 +30,7 @@ func main() {
 	name := "Christoffer"
 	numMessages := 42
 	
-	t := i18n.New()
+	t := i18n.NewTranslator()
 	
 	fmt.Println(t.Greeting(name)) // "Hello, Christoffer!"
 	fmt.Println(t.SideBar().Notifications(1, "emails")) // "You have 1 new notification in emails"
