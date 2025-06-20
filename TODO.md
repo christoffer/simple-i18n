@@ -1,4 +1,0 @@
-- [ ] Support for non-simple plurals: "{count} {octopus|octopi}"
-- [ ] Support for specifying base language
-- [ ] Comment over generated functions with the translation string
-- [ ] Validation for non-base languages so that they conform
