@@ -139,7 +139,8 @@ The tool generates:
 
 ```bash
 make build # => bin/simple-i18n
-make test # Builds the binary and a test integration app
+make test # Runs Go tests
+make integration # Builds the binary, uses it to build a test integration app, and runs it
 ```
 
 ## License

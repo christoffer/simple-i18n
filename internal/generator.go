@@ -164,12 +164,13 @@ func GetTranslator(allLocales []string, packageName string, baseLocaleData TomlP
 
 	// Register all languages
 	for index, lang := range allLocales {
-		langName := toPublicName(lang)
-		structName := fmt.Sprintf("Translation%s", langName)
+		locale := toPublicName(lang)
+		structName := fmt.Sprintf("Translation%s", locale)
 
-		// Use first as default
 		if index == 0 {
-			sb.WriteString(fmt.Sprintf("\tt.current = &%s{}\n\n", structName))
+			// Default to base locale
+			baseLocale := toPublicName(baseLocaleData.Locale)
+			sb.WriteString(fmt.Sprintf("\tt.current = &Translation%s{}\n\n", baseLocale))
 		}
 
 		sb.WriteString(fmt.Sprintf("\tt.langs[\"%s\"] = &%s{}\n", lang, structName))

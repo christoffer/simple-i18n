@@ -33,6 +33,7 @@ func printAllTranslations(t *i18n.Translator, language string) {
 
 func main() {
 	t := i18n.New()
+	fmt.Printf("Base root: %s\n", t.RootMessage())
 	languages := []string{"en", "en_uk", "sv"}
 	for _, lang := range languages {
 		if err := t.SetLanguage(lang); err != nil {
