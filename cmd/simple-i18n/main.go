@@ -57,7 +57,7 @@ func main() {
 
 	allLocales := make([]string, 0)
 	for locale, tomlData := range processResult.ParsedFuncsByLocale {
-		content, err := internal.GetTranslationImpl(tomlData, packageName)
+		content, err := internal.GetTranslationImpl(tomlData, packageName, verbose)
 		if err != nil {
 			bail("Error generating translation implementation for %s: %v", locale, err)
 		}
@@ -66,13 +66,13 @@ func main() {
 	}
 
 	baseLocaleData := processResult.ParsedFuncsByLocale[processResult.BaseLocale]
-	if content, err := internal.GetBaseTranslation(baseLocaleData, packageName); err != nil {
+	if content, err := internal.GetBaseTranslation(baseLocaleData, packageName, verbose); err != nil {
 		bail("Error generating base translation interface: %v", err)
 	} else {
 		writeFile("base.go", outputDir, content, verbose)
 	}
 
-	if content, err := internal.GetTranslator(allLocales, packageName, baseLocaleData); err != nil {
+	if content, err := internal.GetTranslator(allLocales, baseLocaleData, packageName, verbose); err != nil {
 		bail("Error generating translator: %v", err)
 	} else {
 		writeFile("translator.go", outputDir, content, verbose)

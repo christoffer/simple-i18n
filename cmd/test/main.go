@@ -5,9 +5,10 @@ import (
 	"github.com/christoffer/simple-i18n/cmd/test/generated"
 )
 
-func printAllTranslations(t *i18n.Translator, language string) {
+func printAllTranslations(t *i18n.T, language string) {
 	fmt.Printf("=== %s ===\n", language)
 	fmt.Printf("Root message: %s\n", t.RootMessage())
+	fmt.Printf("Root message with params: %s\n", t.RootWithParams("Christoffer"))
 
 	menu := t.Menu()
 

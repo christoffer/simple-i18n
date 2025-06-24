@@ -17,7 +17,7 @@ notifications = "You have {count} new notification{{s}} in {inbox}"
 greeting = "Hej {name}!"
 
 [sidebar]
-notifcations = "Du har {count} meddalande{{n}} i {inbox}"
+notifcations = "Du har {count} meddelande{{n}} i {inbox}"
 ```
 
 ```go
@@ -26,6 +26,12 @@ import (
 	"my-project/i18n"
 )
 
+func printSidebar(t *i18n.T) {
+  s := t.SideBar()
+  fmt.Println(s.Notifications(1, "emails")) // "You have 1 new notification in emails"
+  fmt.Println(s.Notifications(numMessages, "direct messages")) // "You have 42 new notifications in direct messages"
+}
+
 func main() {
 	name := "Christoffer"
 	numMessages := 42
@@ -33,13 +39,13 @@ func main() {
 	t := i18n.NewTranslator()
 	
 	fmt.Println(t.Greeting(name)) // "Hello, Christoffer!"
-	fmt.Println(t.SideBar().Notifications(1, "emails")) // "You have 1 new notification in emails"
-	fmt.Println(t.SideBar().Notifications(numMessages, "direct messages")) // "You have 42 new notifications in direct messages"
+	printSidebar(&t)
 	
 	t.SetLocale("sv")
 	fmt.Println(t.Greeting(name)) // "Hej, Christoffer!"
 }
 ```
+
 ## Features
 
 - **Type-safe translations**: Generates Go interfaces and implementations for each locale
@@ -69,6 +75,7 @@ TODO
 ### Example
 
 ```bash
+# Source files ../translations, generating into ./inter, using "sv" as base locale
 ./bin/simple-i18n -i ../translations -o . -p inter -b sv
 ```
 

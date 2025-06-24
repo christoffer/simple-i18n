@@ -95,14 +95,17 @@ func TestValidateSection_MismatchedSignatures(t *testing.T) {
 	base := map[string]TranslateFunc{
 		"greet": {
 			Name:   "Greet",
-			Params: []string{"name string"},
+			Params: []TranslateFuncParam{{Name: "name", Type: "string"}},
 		},
 	}
 
 	other := map[string]TranslateFunc{
 		"greet": {
-			Name:   "Greet",
-			Params: []string{"name string", "count int"}, // Different signature
+			Name: "Greet",
+			Params: []TranslateFuncParam{
+				{Name: "name", Type: "string"},
+				{Name: "count", Type: "int"},
+			},
 		},
 	}
 

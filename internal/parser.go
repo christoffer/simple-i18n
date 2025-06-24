@@ -5,21 +5,34 @@ import (
 	"strings"
 )
 
+type TranslateFuncParam struct {
+	Name string
+	Type string
+}
+
 type TranslateFunc struct {
 	DocString string
 	Name      string
-	Params    []string
+	Params    []TranslateFuncParam
 	Body      string
 }
 
 func (t *TranslateFunc) Signature() string {
-	return fmt.Sprintf("%s(%s) string\n", t.Name, strings.Join(t.Params, ", "))
+	return fmt.Sprintf("%s(%s) string", t.Name, t.ParamsList())
+}
+
+func (t *TranslateFunc) ParamsList() string {
+	params := make([]string, len(t.Params))
+	for i, param := range t.Params {
+		params[i] = fmt.Sprintf("%s %s", param.Name, param.Type)
+	}
+	return strings.Join(params, ", ")
 }
 
 func parseTranslateFunc(tomlKey string, value string) (TranslateFunc, error) {
 	tokens := tokenize(value)
 
-	funcArgs := make([]string, 0)
+	trParams := make([]TranslateFuncParam, 0)
 	seenFuncArgs := make(map[string]bool)
 	fmtArgs := make([]string, 0)
 
@@ -40,9 +53,16 @@ func parseTranslateFunc(tomlKey string, value string) (TranslateFunc, error) {
 		case TokenSub:
 			if !seenFuncArgs[token.Value] {
 				if token.Value == "count" {
-					funcArgs = append([]string{"count int"}, funcArgs...)
+					// Prepend count
+					trParams = append([]TranslateFuncParam{{
+						Name: "count",
+						Type: "int",
+					}}, trParams...)
 				} else {
-					funcArgs = append(funcArgs, token.Value+" string")
+					trParams = append(trParams, TranslateFuncParam{
+						Name: token.Value,
+						Type: "string",
+					})
 				}
 				seenFuncArgs[token.Value] = true
 			}
@@ -55,7 +75,11 @@ func parseTranslateFunc(tomlKey string, value string) (TranslateFunc, error) {
 			returnPlural.WriteString(placeholder)
 		case TokenPlural:
 			if !seenFuncArgs["count"] {
-				funcArgs = append([]string{"count int"}, funcArgs...)
+				// Prepend count
+				trParams = append([]TranslateFuncParam{{
+					Name: "count",
+					Type: "int",
+				}}, trParams...)
 				seenFuncArgs["count"] = true
 			}
 			hasPlural = true
@@ -89,7 +113,7 @@ func parseTranslateFunc(tomlKey string, value string) (TranslateFunc, error) {
 	return TranslateFunc{
 		Name:      toPublicName(tomlKey),
 		DocString: "// " + value,
-		Params:    funcArgs,
+		Params:    trParams,
 		Body:      body.String(),
 	}, nil
 }

@@ -1,5 +1,6 @@
 # Swedish
 root_message = "Välkommen"
+root_with_params = "Välkommen {name}"
 
 [menu]
 message = "{name} har {count} notis{{er}}"

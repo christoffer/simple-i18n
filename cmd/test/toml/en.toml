@@ -1,5 +1,6 @@
 # English
 root_message = "Welcome"
+root_with_params = "Welcome {name}"
 
 [menu]
 message = "The {name} has {count} notification{{s}}"
