@@ -29,6 +29,9 @@ func printAllTranslations(t *i18n.T, language string) {
 
 	fmt.Printf("Escaped: %s\n", specials.Ecaped())
 
+	fmt.Printf("Multiline notification (1, Alice): %s\n", specials.MultilineNotification(1, "Alice"))
+	fmt.Printf("Multiline notification (3, Bob): %s\n", specials.MultilineNotification(3, "Bob"))
+
 	fmt.Println()
 }
 

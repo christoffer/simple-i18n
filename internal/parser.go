@@ -29,6 +29,15 @@ func (t *TranslateFunc) ParamsList() string {
 	return strings.Join(params, ", ")
 }
 
+func createDocString(value string) string {
+	lines := strings.Split(value, "\n")
+	var docLines []string
+	for _, line := range lines {
+		docLines = append(docLines, "// "+line)
+	}
+	return strings.Join(docLines, "\n")
+}
+
 func parseTranslateFunc(tomlKey string, value string) (TranslateFunc, error) {
 	tokens := tokenize(value)
 
@@ -110,9 +119,12 @@ func parseTranslateFunc(tomlKey string, value string) (TranslateFunc, error) {
 		genSprintfReturn(&body, returnSingular.String(), fmtArgs)
 	}
 
+	// Create properly formatted multiline comment
+	docString := createDocString(value)
+	
 	return TranslateFunc{
 		Name:      toPublicName(tomlKey),
-		DocString: "// " + value,
+		DocString: docString,
 		Params:    trParams,
 		Body:      body.String(),
 	}, nil

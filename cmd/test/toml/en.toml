@@ -11,3 +11,11 @@ count = "Count: {count}"
 criteria = "There are {count} {{criterion|criteria}}"
 point = "Point{{s}}"
 ecaped = 'A couple of % here or "there"?'
+multiline_notification = """
+Hello {name},
+
+You have {count} new message{{s}}
+waiting for you.
+
+Check your inbox.
+"""

@@ -11,3 +11,11 @@ count = "Antal: {count}" # Count without plurals
 criteria = "Det finns {count} {{kreterium|kriterier}}"
 point = "Poäng{{}}" # Plural form in swedish is empty
 ecaped = 'Några % hit eller "dit"?'
+multiline_notification = """
+Hej {name},
+
+Du har {count} nytt meddelande{{n}}
+som väntar på dig.
+
+Kontrollera din inkorg.
+"""
