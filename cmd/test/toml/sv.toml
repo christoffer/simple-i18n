@@ -14,8 +14,6 @@ ecaped = 'Några % hit eller "dit"?'
 multiline_notification = """
 Hej {name},
 
-Du har {count} nytt meddelande{{n}}
+Du har {count} {{nytt|nya}} meddelande{{n}}
 som väntar på dig.
-
-Kontrollera din inkorg.
 """
