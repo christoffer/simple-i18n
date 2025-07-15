@@ -102,8 +102,8 @@ func parseTranslateFunc(tomlKey string, value string) (TranslateFunc, error) {
 			} else {
 				pluralForm = strings.Join(parts[1:], "")
 			}
-			returnSingular.WriteString(pluralForm)
-			returnPlural.WriteString(singularForm)
+			returnSingular.WriteString(singularForm)
+			returnPlural.WriteString(pluralForm)
 		}
 	}
 
